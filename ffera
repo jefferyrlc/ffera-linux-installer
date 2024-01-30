@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export WINEPREFIX="/home/$USER/Games/FFEra/wineprefix"
+
+cd /home/$USER/Games/FFEra/game/Ashita
+./wine injector.exe FFEra.xml

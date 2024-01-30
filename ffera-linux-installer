@@ -1,0 +1,108 @@
+#!/bin/bash
+
+export USERDIR="/home/$USER"
+export WINEPREFIX="$USERDIR/Games/FFEra/wineprefix"
+export WINEURL=https://github.com/GloriousEggroll/wine-ge-custom/releases/download/GE-Proton8-25/wine-lutris-GE-Proton8-25-x86_64.tar.xz
+export DXVKURL=https://github.com/doitsujin/dxvk/releases/download/v2.3/dxvk-2.3.tar.gz
+export D8VKURL=https://github.com/AlpyneDreams/d8vk/releases/download/d8vk-v1.0/d8vk-v1.0.tar.gz
+export WINEPATH="$USERDIR/Games/FFEra/lutris-GE-Proton8-25-x86_64/"
+export WINE="$WINEPATH/bin/wine"
+
+echo Checking to see if the FFEra Installer exists
+
+if test -f FFEraInstaller-Jan2023.zip; then
+    echo Installer present, continuing
+else
+    if test -f $USERDIR/Downloads/FFEraInstaller-Jan2023.zip; then
+        echo Installer present, continuing
+    else
+        echo Installer missing, please download FFEraInstaller-Jan2023.zip from https://drive.google.com/file/d/1w2o3XH9jmeFF81kG07TUf8hP7cwo8tuD/view?usp=share_link
+        echo and place it in the same directory as this installer or the Downloads folder and run again
+        echo An error occured, terminating
+        exit
+    fi
+fi
+
+echo Setting up the environment
+
+if test -d $USERDIR/Games; then
+    if [ ! -d "$USERDIR/FFEra" ]; then
+        mkdir $USERDIR/Games/FFEra
+    fi
+else
+    mkdir $USERDIR/Games
+    mkdir $USERDIR/Games/FFEra
+fi
+
+echo Moving to Install directory
+if test -f FFEraInstaller-Jan2023.zip; then
+    cp FFEraInstaller-Jan2023.zip $USERDIR/Games/FFEra
+else
+    cp $USERDIR/Downloads/FFEraInstaller-Jan2023.zip $USERDIR/Games/FFEra
+fi
+cp ffera $USERDIR/Games/FFEra
+cp ffera.png $USERDIR/Games/FFEra
+cp ffera.desktop $USERDIR/Games/FFEra
+cd $USERDIR/Games/FFEra
+
+echo Downloading Wine
+wget $WINEURL
+tar xvf wine-lutris-GE-Proton8-25-x86_64.tar.xz
+
+echo Creating Wine Prefix
+$WINEPATH/bin/wineboot
+
+echo Downloading DXVK
+wget $DXVKURL
+tar xvf dxvk-2.3.tar.gz
+cd dxvk-2.3
+cp x64/*.dll $WINEPREFIX/drive_c/windows/system32
+cp x32/*.dll $WINEPREFIX/drive_c/windows/syswow64
+$WINE reg add 'HKEY_CURRENT_USER\Software\Wine\DllOverrides' /v d3d11 /d native /f >/dev/null 2>&1
+$WINE reg add 'HKEY_CURRENT_USER\Software\Wine\DllOverrides' /v d3d10core /d native /f >/dev/null 2>&1
+$WINE reg add 'HKEY_CURRENT_USER\Software\Wine\DllOverrides' /v dxgi /d native /f >/dev/null 2>&1
+$WINE reg add 'HKEY_CURRENT_USER\Software\Wine\DllOverrides' /v d3d9 /d native /f >/dev/null 2>&1
+
+cd ..
+mkdir d8vk
+cd d8vk
+wget $D8VKURL
+tar xvf d8vk-v1.0.tar.gz
+./setup_d3d8.sh install --no-proton
+
+cd ..
+
+7z x FFEraInstaller-Jan2023.zip
+mkdir game
+echo Running the Installer... Please install to "Z:\home\ $USER\Games\FFEra\game" This is important for Shortcuts to work
+sleep 15
+$WINE FFEraInstaller-Jan2023.exe
+ln -s $WINEPATH/bin/wine game/Ashita
+
+echo Opening a text editor to configure Ashita
+
+echo Cleaning up
+rm -rf dxvk*
+rm -rf d8vk*
+rm wine-lutris-GE-Proton8-25-x86_64.tar.xz
+rm RetailClient-30221103_1.pak
+rm FFEraInstaller*
+
+echo Installing Shortcuts
+if test -f $USERDIR/.local/share/icons/ffera.png; then
+    echo Icon already Installed
+    rm ffera.png
+else
+    mv ffera.png $USERDIR/.local/share/icons/
+fi
+if test -f $USERDIR/.local/share/applications/ffera.desktop; then
+    echo Desktop file already Installed
+    rm ffera.desktop
+else
+    chmod +x ffera.desktop
+    mv ffera.desktop $USERDIR/.local/share/applications/
+fi
+chmod +x ffera
+
+echo "Installation Complete YOU NEED TO EDIT /home/$USER/Games/FFEra/game/Ashita/config/boot/FFEra.xml FOR AUTO LOGIN OR ELSE IT WON'T WORK"
+
